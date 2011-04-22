@@ -1,10 +1,11 @@
 #!/usr/bin/perl -w
 
-# #array with the 4 options, set to 0s
-# if all 4 are 0, use default (-lwc in that order)
-# else, use as set
-
+sub main;
+sub getOpts;
+sub printHelp;
+sub printVersion;
 sub lineProcessing($);
+sub printWC;
 
 use constant {
     LINECOUNT   => 0,
@@ -13,18 +14,64 @@ use constant {
     LONGESTLINE => 3,
 };
 
-@files = ();
-
-%options = ("-l", 0,
-            "-w", 0,
-            "-c", 0,
-            "-L", 0);
-
 #          line  word  char  long  file
 @count = ();
 
-foreach $arg (@ARGV) {
-	if ($arg eq "--version") {
+%options = ("l", 0,
+            "w", 0,
+            "c", 0,
+            "L", 0);
+
+sub main {
+    getOpts();
+
+    if (scalar(@ARGV) == 0) {
+        ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
+        while (<STDIN>) {
+            lineProcessing($_);
+        }
+        push(@count, [$lineCount, $wordCount, $charCount, $longestLine]);
+    } else {
+        foreach $file (@ARGV) {
+            open(FILE, "<$file") or die "$0: Can't open $file: $!\n";
+            ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
+            while (<FILE>) {
+                lineProcessing($_);
+            }
+            push(@count, [$lineCount, $wordCount, $charCount, $longestLine, $file]);
+            close(FILE);
+        }
+    }
+    printWC();
+}
+
+sub getOpts {
+    my $numberOfArgs = scalar(@ARGV);
+    for (1..$numberOfArgs) {
+        $arg = shift(@ARGV);
+
+        printVersion() if ($arg eq "--version");
+        printHelp() if ($arg eq "--help");
+
+        if ($arg =~ /^-$/) {
+            push(@ARGV, $arg);
+        } elsif ($arg =~ /^-/) {
+            $arg =~ s/-//;
+            my @clusteredArgs = split(//, $arg);
+            foreach my $a (@clusteredArgs) {
+                if ($a =~ /[wclL]/) {
+                    $options{$a} = 1;
+                } else {
+                    die("$0: invalid option -- '$a'\nTry `$0 --help' for more information.\n");
+                }
+            }
+        } else {
+            push(@ARGV, $arg);
+        }
+    }
+}
+
+sub printVersion { 
 print <<ENDVERSION;
 $0 (GNU coreutils) git
 License WTFPLv2: 
@@ -35,9 +82,10 @@ To Public License, Version 2, as published by Sam Hocevar.
 
 Written by Johnny Wong and no other cs2041 students.
 ENDVERSION
-		exit(0);
-	}
-    if ($arg eq "--help") {
+    exit(0);
+}
+
+sub printHelp {
 print <<ENDHELP;
 Usage: $0 [OPTION]... [FILE]...
        
@@ -55,42 +103,7 @@ read standard input.
 
 Report bugs to jwon145\@cse.uns -- wait no, ignore them. They are features.
 ENDHELP
-        exit(0);
-    }
-    if ($arg =~ /-([A-KM-Za-bd-km-vx-z])/) {
-        die("$0: invalid option -- '$1'\nTry `$0 --help' for more information.\n");
-    }
-    if ($arg =~ /(-[lwcL])/) {
-        $options{"$1"} = 1;
-    }
-	else {
-		push @files, $arg;
-	}
-}
-
-if (scalar(@files) == 0) {
-    ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
-    while (<STDIN>) {
-        lineProcessing($_);
-    }
-    push(@count, [$lineCount, $wordCount, $charCount, $longestLine]);
-} else {
-    foreach $f (@files) {
-        open(F,"<$f") or die "$0: Can't open $f: $!\n";
-        ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
-        while (<F>) {
-            lineProcessing($_);
-        }
-        push(@count, [$lineCount, $wordCount, $charCount, $longestLine, $f]);
-        close(F);
-    }
-}
-
-for $i (0..$#count) {
-    for $j (0..$#{$count[$i]}) {
-        print("$count[$i][$j] ");
-    }
-    print("\n");
+    exit(0);
 }
 
 sub lineProcessing($) {
@@ -116,3 +129,26 @@ sub lineProcessing($) {
     $wordCount += scalar(@words);
     @words = ();
 }
+
+sub printWC {
+# if ($options{"-l"} == 0 && $options{"-w"} == 0 && $options{"-c"} == 0 && $options{"-L"} == 0) { # when no args
+#     for $row (0..$#count) {
+#         $count[$row][LONGESTLINE] = "";
+#     }
+# } else {
+#     foreach $key (keys(%options)) {
+#         if (%option{$key}) {
+#             for $row (0..$#count) {
+#                 $count[$row][]
+#     }
+# }
+
+    for $i (0..$#count) {
+        for $j (0..$#{$count[$i]}) {
+            print("$count[$i][$j] ");
+        }
+        print("\n");
+    }
+}
+
+main();
