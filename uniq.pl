@@ -1,16 +1,56 @@
 #!/usr/bin/perl -w
 
-@files = ();
+sub main;
+sub getOpts;
+sub printHelp;
+sub printVersion;
 
-%options = ("-u", 0,
-            "-d", 0,
-            "-i", 0,
-            "-c", 0,
-            "-f", 0,
-            "-w", 0);
+%options = ("u", 0,
+            "i", 0,
+            "c", 0,
+            "d", 0,
+            "f", 0,
+            "w", 0);
 
-foreach $arg (@ARGV) {
-	if ($arg eq "--version") {
+sub main {
+    getOpts();
+    
+    my $line;
+    my $prev;
+    while (<STDIN>) {
+        $prev = $line;
+        $line = $_;
+        if ($line ne $prev or not defined $prev) {
+            print "$line";
+        }
+    }
+}
+
+sub getOpts {
+    my $numberOfArgs = scalar(@ARGV);
+    for (1..$numberOfArgs) {
+        $arg = shift(@ARGV);
+
+        printVersion() if ($arg eq "--version");
+        printHelp() if ($arg eq "--help");
+
+        if ($arg =~ /^-/) {
+            $arg =~ s/-//;
+            my @clusteredArgs = split(//, $arg);
+            foreach my $a (@clusteredArgs) {
+                if ($a =~ /[uicdfw]/) {
+                    $options{$a} = 1;
+                } else {
+                    die("$0: invalid option -- '$a'\nTry `$0 --help' for more information.\n");
+                }
+            }
+        } else {
+            push(@ARGV, $arg);
+        }
+    }
+}
+
+sub printVersion { 
 print <<ENDVERSION;
 $0 (GNU coreutils) git
 License WTFPLv2: 
@@ -21,9 +61,10 @@ To Public License, Version 2, as published by Sam Hocevar.
 
 Written by Johnny Wong and no other cs2041 students.
 ENDVERSION
-		exit(0);
-	} 
-    if ($arg eq "--help") {
+    exit(0);
+}
+
+sub printHelp {
 print <<ENDHELP;
 Usage: $0 [OPTION]... [INPUT [OUTPUT]]
 
@@ -49,18 +90,7 @@ You may want to sort the input first, or use `sort -u' without `uniq'.
 
 Report bugs to jwon145\@cse.uns -- wait no, ignore them. They are features.
 ENDHELP
-        exit(0);
-    }
-	# handle other options
-	# ...
-	else {
-		push @files, $arg;
-	}
+    exit(0);
 }
 
-foreach $f (@files) {
-	open(F,"<$f") or die "$0: Can't open $f: $!\n";
-	# process F
-	#...
-	close(F);
-}
+main();
