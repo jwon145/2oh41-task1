@@ -5,17 +5,11 @@ sub getOpts;
 sub printHelp;
 sub printVersion;
 sub lineProcessing($);
+sub storeCounts($);
+sub addTotal;
 sub printWC;
 
-use constant {
-    LINECOUNT   => 0,
-    WORDCOUNT   => 1,
-    CHARCOUNT   => 2,
-    LONGESTLINE => 3,
-};
-
-#          line  word  char  long  file
-@count = ();
+@files = ();
 
 %options = ("l", 0,
             "w", 0,
@@ -25,23 +19,26 @@ use constant {
 sub main {
     getOpts();
 
-    if (scalar(@ARGV) == 0) {
-        ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
-        while (<STDIN>) {
-            lineProcessing($_);
-        }
-        push(@count, [$lineCount, $wordCount, $charCount, $longestLine]);
-    } else {
-        foreach $file (@ARGV) {
+    if (scalar(@ARGV) != 0) {
+        foreach my $file (@ARGV) {
             open(FILE, "<$file") or die "$0: Can't open $file: $!\n";
             ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
             while (<FILE>) {
                 lineProcessing($_);
             }
-            push(@count, [$lineCount, $wordCount, $charCount, $longestLine, $file]);
+            storeCounts($file);
             close(FILE);
         }
+    } else {
+        ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
+        while (<STDIN>) {
+            lineProcessing($_);
+        }
+        storeCounts("");
+        push(@ARGV, "");
     }
+
+    addTotal();
     printWC();
 }
 
@@ -130,24 +127,34 @@ sub lineProcessing($) {
     @words = ();
 }
 
-sub printWC {
-# if ($options{"-l"} == 0 && $options{"-w"} == 0 && $options{"-c"} == 0 && $options{"-L"} == 0) { # when no args
-#     for $row (0..$#count) {
-#         $count[$row][LONGESTLINE] = "";
-#     }
-# } else {
-#     foreach $key (keys(%options)) {
-#         if (%option{$key}) {
-#             for $row (0..$#count) {
-#                 $count[$row][]
-#     }
-# }
+sub storeCounts($) {
+    my ($file) = @_;
+    push(@files, {"file" => $file,
+                  "l"    => $lineCount,
+                  "w"    => $wordCount,
+                  "c"    => $charCount,
+                  "L"    => $longestLine});
+}
 
-    for $i (0..$#count) {
-        for $j (0..$#{$count[$i]}) {
-            print("$count[$i][$j] ");
+sub addTotal {
+
+}
+
+sub printWC {
+    if ($options{"l"} == 0 && $options{"w"} == 0 && $options{"c"} == 0 && $options{"L"} == 0) { # default
+        foreach my $i (0..$#files) {
+            foreach my $opt qw(l w c) {
+                print "$files[$i]{$opt}\t";
+            }
+            print "$files[$i]{'file'}\n";
         }
-        print("\n");
+    } else {
+        foreach my $i (0..$#files) {
+            foreach my $opt qw(l w c L) {
+                print "$files[$i]{$opt}\t" if ($options{$opt} != 0);
+            }
+            print "$files[$i]{'file'}\n";
+        }
     }
 }
 
