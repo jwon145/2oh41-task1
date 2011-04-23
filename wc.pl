@@ -38,7 +38,8 @@ sub main {
         push(@ARGV, "");
     }
 
-    addTotal();
+    
+    addTotal() if (scalar(@ARGV) > 1);
     printWC();
 }
 
@@ -137,7 +138,20 @@ sub storeCounts($) {
 }
 
 sub addTotal {
+    my ($l, $w, $c, $ll) = (0, 0, 0, 0);
 
+    foreach my $i (0..$#files) {
+        $l += $files[$i]{"l"};
+        $w += $files[$i]{"w"};
+        $c += $files[$i]{"c"};
+        $ll = $files[$i]{"L"} if ($files[$i]{"L"} > $ll);
+    }
+
+    push(@files, {"file" => "total",
+                  "l"    => $l,
+                  "w"    => $w,
+                  "c"    => $c,
+                  "L"    => $ll});
 }
 
 sub printWC {
