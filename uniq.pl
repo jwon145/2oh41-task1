@@ -1,9 +1,15 @@
 #!/usr/bin/perl -w
 
+# prints different lines: default -u -d
+# apply vefore processing: -i -f -w
+# apply after processing: -c
+
 sub main;
 sub getOpts;
 sub printHelp;
 sub printVersion;
+sub printUniq($$$);
+sub printUniqLast($$);
 
 %options = ("u", 0,
             "i", 0,
@@ -14,16 +20,19 @@ sub printVersion;
 
 sub main {
     getOpts();
+
+    exit(0) if ($options{"u"} and $options{"d"}); # mutually exclusive switches
     
-    my $line;
+    my $beforeprev;
     my $prev;
+    my $line;
     while (<STDIN>) {
+        $beforeprev = $prev;
         $prev = $line;
         $line = $_;
-        if ($line ne $prev or not defined $prev) {
-            print "$line";
-        }
+        printUniq($beforeprev, $prev, $line);
     }
+    printUniqLast($prev, $line);
 }
 
 sub getOpts {
@@ -34,7 +43,9 @@ sub getOpts {
         printVersion() if ($arg eq "--version");
         printHelp() if ($arg eq "--help");
 
-        if ($arg =~ /^-/) {
+        if ($arg =~ /^-$/) {
+            push(@ARGV, $arg);
+        } elsif ($arg =~ /^-/) {
             $arg =~ s/-//;
             my @clusteredArgs = split(//, $arg);
             foreach my $a (@clusteredArgs) {
@@ -47,6 +58,13 @@ sub getOpts {
         } else {
             push(@ARGV, $arg);
         }
+    }
+    
+    if (scalar(@ARGV) > 2) {
+        die("$0: extra operand `$ARGV[2]'\nTry `$0 --help'for more information.\n");
+    } else {
+        $input = $ARGV[0] if (defined $ARGV[0]);
+        $output = $ARGV[1] if (defined $ARGV[1]);
     }
 }
 
@@ -91,6 +109,27 @@ You may want to sort the input first, or use `sort -u' without `uniq'.
 Report bugs to jwon145\@cse.uns -- wait no, ignore them. They are features.
 ENDHELP
     exit(0);
+}
+
+sub printUniq($$$) {
+    my ($beforeprev, $prev, $line) = @_;
+
+    if ($options{"u"}) {
+        print "$prev" if (defined $beforeprev and defined $prev and $prev ne $line and $prev ne $beforeprev);
+    }
+    if (not $options{"u"} and not $options{"d"}) {
+        print "$line" if (not defined $prev or $line ne $prev);
+    }
+}
+
+# can't determine if there will be more lines of input in the while loop
+# uniq -u needs to know this though so part of uniq -u is outside the loop
+sub printUniqLast($$) {
+    my ($prev, $line) = @_;
+
+    if ($options{"u"}) {
+        print "$line" if (defined $line and (not defined $prev or $line ne $prev));
+    }
 }
 
 main();
