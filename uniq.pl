@@ -4,12 +4,16 @@
 # apply vefore processing: -i -f -w
 # apply after processing: -c
 
+#
+#wow
+#slope
 sub main;
 sub getOpts;
 sub printHelp;
 sub printVersion;
 sub printUniq($$$);
 sub printUniqLast($$);
+#this was not intentional
 
 %options = ("u", 0,
             "i", 0,
@@ -26,7 +30,7 @@ sub main {
     my $beforeprev;
     my $prev;
     my $line;
-    while (<STDIN>) {
+    while (<>) {
         $beforeprev = $prev;
         $prev = $line;
         $line = $_;
@@ -61,10 +65,9 @@ sub getOpts {
     }
     
     if (scalar(@ARGV) > 2) {
-        die("$0: extra operand `$ARGV[2]'\nTry `$0 --help'for more information.\n");
+        die("$0: extra operand `$ARGV[2]'\nTry `$0 --help' for more information.\n");
     } else {
-        $input = $ARGV[0] if (defined $ARGV[0]);
-        $output = $ARGV[1] if (defined $ARGV[1]);
+        $output = pop(@ARGV) if (defined $ARGV[1]);
     }
 }
 
@@ -112,13 +115,20 @@ ENDHELP
 }
 
 sub printUniq($$$) {
+    if (defined $output) {
+        open($fh, "> $output") or die "$0: Can't open $output: $!\n";
+    } else {
+        $fh = *STDOUT;
+    }
+
     my ($beforeprev, $prev, $line) = @_;
 
     if ($options{"u"}) {
-        print "$prev" if (defined $beforeprev and defined $prev and $prev ne $line and $prev ne $beforeprev);
+        print $fh "$prev" if (not defined $beforeprev and defined $prev and $prev ne $line);
+        print $fh "$prev" if (defined $beforeprev and defined $prev and $prev ne $line and $prev ne $beforeprev);
     }
     if (not $options{"u"} and not $options{"d"}) {
-        print "$line" if (not defined $prev or $line ne $prev);
+        print $fh "$line" if (not defined $prev or $line ne $prev);
     }
 }
 
@@ -128,7 +138,11 @@ sub printUniqLast($$) {
     my ($prev, $line) = @_;
 
     if ($options{"u"}) {
-        print "$line" if (defined $line and (not defined $prev or $line ne $prev));
+        print $fh "$line" if (defined $line and (not defined $prev or $line ne $prev));
+    }
+
+    if (defined $output) {
+        close($fh);
     }
 }
 
