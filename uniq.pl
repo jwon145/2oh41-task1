@@ -164,8 +164,11 @@ sub isNotEqual($$) {
         $line2 =~ tr/A-Z/a-z/;
     }
 
-    if ($options{"f"} != -1) {
-        # body...
+    if ($options{"f"} > 0) {
+        for (1..$options{"f"}) {
+            $line1 =~ s/^\s*\S+//;
+            $line2 =~ s/^\s*\S+//;
+        }
     }
 
     if ($options{"w"} != -1) {
