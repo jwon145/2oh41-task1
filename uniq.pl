@@ -172,7 +172,8 @@ sub isNotEqual($$) {
     }
 
     if ($options{"w"} != -1) {
-        # body...
+        $line1 =~ s/^(.{$options{"w"}}).*$/$1/;
+        $line2 =~ s/^(.{$options{"w"}}).*$/$1/;
     }
 
     if ($line1 ne $line2) {
