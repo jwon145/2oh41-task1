@@ -13,14 +13,14 @@ sub printHelp;
 sub printVersion;
 sub printUniq($$$);
 sub printUniqLast($$);
-#this was not intentional
+sub isNotEqual($$);
 
 %options = ("u", 0,
             "i", 0,
             "c", 0,
             "d", 0,
-            "f", 0,
-            "w", 0);
+            "f", -1,
+            "w", -1);
 
 sub main {
     getOpts();
@@ -42,6 +42,7 @@ sub main {
 sub getOpts {
     my $numberOfArgs = scalar(@ARGV);
     for (1..$numberOfArgs) {
+        last if (scalar(@ARGV) == 0);
         $arg = shift(@ARGV);
 
         printVersion() if ($arg eq "--version");
@@ -53,7 +54,15 @@ sub getOpts {
             $arg =~ s/-//;
             my @clusteredArgs = split(//, $arg);
             foreach my $a (@clusteredArgs) {
-                if ($a =~ /[uicdfw]/) {
+                if ($a =~ /([wf])/) {
+                    $options{$a} = $arg;
+                    $options{$a} =~ s/^.*$1//;
+                    $options{$a} = shift(@ARGV) if ($options{$a} =~ /^$/);
+                    if ($options{$a} =~ /^[^0-9]+$/) {
+                        die "$0: invalid number for -$a option\n";
+                    }
+                    last;   # no more options in that cluster; uniq -w9u not allowed
+                } elsif ($a =~ /[uicd]/) {
                     $options{$a} = 1;
                 } else {
                     die("$0: invalid option -- '$a'\nTry `$0 --help' for more information.\n");
@@ -124,11 +133,11 @@ sub printUniq($$$) {
     my ($beforeprev, $prev, $line) = @_;
 
     if ($options{"u"}) {
-        print $fh "$prev" if (not defined $beforeprev and defined $prev and $prev ne $line);
-        print $fh "$prev" if (defined $beforeprev and defined $prev and $prev ne $line and $prev ne $beforeprev);
+        print $fh "$prev" if (not defined $beforeprev and defined $prev and isNotEqual($prev, $line));
+        print $fh "$prev" if (defined $beforeprev and defined $prev and isNotEqual($prev, $line) and isNotEqual($prev, $beforeprev));
     }
     if (not $options{"u"} and not $options{"d"}) {
-        print $fh "$line" if (not defined $prev or $line ne $prev);
+        print $fh "$line" if (not defined $prev or isNotEqual($line, $prev));
     }
 }
 
@@ -138,11 +147,35 @@ sub printUniqLast($$) {
     my ($prev, $line) = @_;
 
     if ($options{"u"}) {
-        print $fh "$line" if (defined $line and (not defined $prev or $line ne $prev));
+        print $fh "$line" if (defined $line and (not defined $prev or isNotEqual($line, $prev)));
     }
 
     if (defined $output) {
         close($fh);
+    }
+}
+
+sub isNotEqual($$) {
+    my ($lineA, $lineB) = @_;
+    my ($line1, $line2) = ($lineA, $lineB);  # perl does pass by reference, right?
+
+    if ($options{"i"}) {
+        $line1 =~ tr/A-Z/a-z/;
+        $line2 =~ tr/A-Z/a-z/;
+    }
+
+    if ($options{"f"} != -1) {
+        # body...
+    }
+
+    if ($options{"w"} != -1) {
+        # body...
+    }
+
+    if ($line1 ne $line2) {
+        return 1;
+    } else {
+        return 0;
     }
 }
 
