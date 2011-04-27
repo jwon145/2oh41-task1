@@ -19,20 +19,24 @@ sub main {
     
     while (defined $line1 or defined $line2) {
         if (not defined $line1) {
-            print "\t$line2";
+            print "\t" unless ($options{"1"});
+            print "$line2" unless ($options{"2"});
             $line2 = <FILE2>;
         } elsif (not defined $line2) {
-            print "$line1";
+            print "$line1" unless ($options{"1"});
             $line1 = <FILE1>;
         } else {
             if ($line1 lt $line2) {
-                print "$line1";
+                print "$line1" unless ($options{"1"});
                 $line1 = <FILE1>;
             } elsif ($line1 gt $line2) {
-                print "\t$line2";
+                print "\t" unless ($options{"1"});
+                print "$line2" unless ($options{"2"});
                 $line2 = <FILE2>;
             } elsif ($line1 eq $line2) {
-                print "\t\t$line1";
+                print "\t" unless ($options{"1"});
+                print "\t" unless ($options{"2"});
+                print "$line1" unless ($options{"3"});
                 $line1 = <FILE1>;
                 $line2 = <FILE2>;
             }
