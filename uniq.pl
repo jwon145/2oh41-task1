@@ -1,19 +1,13 @@
 #!/usr/bin/perl -w
 
-# prints different lines: default -u -d
-# apply vefore processing: -i -f -w
-# apply after processing: -c
-
-#
-#wow
-#slope
 sub main;
 sub getOpts;
 sub printHelp;
 sub printVersion;
 sub printUniq($$$);
 sub printUniqLast($$);
-sub isNotEqual($$);
+sub isNotEqual($$);     # for -[ifw] since they change what gets compared
+                        # yeah, didn't take into consideration I would be using not on this; double negs throughout!
 
 %options = ("u", 0,
             "i", 0,
@@ -22,10 +16,13 @@ sub isNotEqual($$);
             "f", -1,
             "w", -1);
 
+$count = 1;     # for -c
+$isDupe = 0;
+
 sub main {
     getOpts();
 
-    exit(0) if ($options{"u"} and $options{"d"}); # mutually exclusive switches
+    exit(0) if ($options{"u"} and $options{"d"}); # mutually exclusive switches that is allowed but do nothing
     
     my $beforeprev;
     my $prev;
@@ -133,21 +130,54 @@ sub printUniq($$$) {
     my ($beforeprev, $prev, $line) = @_;
 
     if ($options{"u"}) {
-        print $fh "$prev" if (not defined $beforeprev and defined $prev and isNotEqual($prev, $line));
-        print $fh "$prev" if (defined $beforeprev and defined $prev and isNotEqual($prev, $line) and isNotEqual($prev, $beforeprev));
+        if (defined $prev and isNotEqual($prev, $line)) {
+            if (not defined $beforeprev or isNotEqual($prev, $beforeprev)) {
+                print $fh "\t1 " if ($options{"c"});
+                print $fh "$prev";
+            }
+        }
     }
-    if (not $options{"u"} and not $options{"d"}) {
-        print $fh "$line" if (not defined $prev or isNotEqual($line, $prev));
+    if (not $options{"u"}) {
+        if (defined $prev and not isNotEqual($prev, $line)) {
+            $count++;
+            $isDupe = 1;
+        } elsif (defined $prev and isNotEqual($prev, $line)) {
+            if ($isDupe) {
+                print $fh "\t$count " if ($options{"c"});
+                print $fh "$prev";
+                $isDupe = 0;
+                $count = 1;
+            } elsif (not $options{"d"}) {
+                print $fh "\t$count " if ($options{"c"});
+                print $fh "$prev";
+            }
+        }
     }
 }
 
 # can't determine if there will be more lines of input in the while loop
-# uniq -u needs to know this though so part of uniq -u is outside the loop
+# for example, uniq -u needs to know this, so part of uniq -u has to be outside the loop
 sub printUniqLast($$) {
     my ($prev, $line) = @_;
+    exit(0) if (not defined $line);  # empty file
 
     if ($options{"u"}) {
-        print $fh "$line" if (defined $line and (not defined $prev or isNotEqual($line, $prev)));
+        if (defined $line and (not defined $prev or isNotEqual($line, $prev))) {
+            print $fh "\t1 " if ($options{"c"});
+            print $fh "$line";
+        }
+    } else {
+        if ($options{"d"}) {
+            if (not defined $prev) {
+                # do nothing; no previous = no dupe
+            } elsif (not isNotEqual($prev, $line)) {
+                print $fh "\t$count " if ($options{"c"});
+                print $fh "$prev";
+            }
+        } else {
+            print $fh "\t$count " if ($options{"c"});
+            print $fh "$line";
+        }
     }
 
     if (defined $output) {
