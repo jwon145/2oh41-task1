@@ -19,7 +19,7 @@ sub printWC;
 sub main {
     getOpts();
 
-    if (scalar(@ARGV) != 0) {
+    if (scalar(@ARGV)) {
         foreach my $file (@ARGV) {
             open(FILE, "<$file") or die "$0: Can't open $file: $!\n";
             ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
@@ -71,7 +71,7 @@ sub getOpts {
 
 sub printVersion { 
 print <<ENDVERSION;
-$0 (GNU coreutils) git
+$0 (GNU coreutils) v1.0.0
 License WTFPLv2: 
 This is free software: it comes without any warranty, to
 the extent permitted by applicable law. You can redistribute it
@@ -155,7 +155,7 @@ sub addTotal {
 }
 
 sub printWC {
-    if ($options{"l"} == 0 && $options{"w"} == 0 && $options{"c"} == 0 && $options{"L"} == 0) { # default
+    if (not $options{"l"} and not $options{"w"} and not $options{"c"} and not $options{"L"}) { # default
         foreach my $i (0..$#files) {
             foreach my $opt qw(l w c) {
                 print "$files[$i]{$opt}\t";
@@ -165,7 +165,7 @@ sub printWC {
     } else {
         foreach my $i (0..$#files) {
             foreach my $opt qw(l w c L) {
-                print "$files[$i]{$opt}\t" if ($options{$opt} != 0);
+                print "$files[$i]{$opt}\t" if ($options{$opt});
             }
             print "$files[$i]{'file'}\n";
         }
