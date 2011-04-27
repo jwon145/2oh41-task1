@@ -50,7 +50,7 @@ sub main {
 sub getOpts {
     my $numberOfArgs = scalar(@ARGV);
     for (1..$numberOfArgs) {
-        last if (scalar(@ARGV) == 0);
+        last if (not scalar(@ARGV));
         $arg = shift(@ARGV);
 
         printVersion() if ($arg eq "--version");
@@ -80,7 +80,7 @@ sub getOpts {
 
 sub printVersion { 
 print <<ENDVERSION;
-$0 (GNU coreutils) git
+$0 (GNU coreutils) v1.0.0
 License WTFPLv2: 
 This is free software: it comes without any warranty, to
 the extent permitted by applicable law. You can redistribute it
