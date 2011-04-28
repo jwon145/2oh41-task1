@@ -18,6 +18,7 @@ sub isNotEqual($$);     # for -[ifw] since they change what gets compared
 
 $count = 1;     # for -c
 $isDupe = 0;
+$first = undef;
 
 sub main {
     getOpts();
@@ -31,6 +32,7 @@ sub main {
         $beforeprev = $prev;
         $prev = $line;
         $line = $_;
+        $first = $line if (not defined $first);
         printUniq($beforeprev, $prev, $line);
     }
     printUniqLast($prev, $line);
@@ -79,7 +81,7 @@ sub getOpts {
 
 sub printVersion { 
 print <<ENDVERSION;
-$0 (GNU coreutils) v1.0.0
+$0 (GNU coreutils) v1.0.1
 License WTFPLv2: 
 This is free software: it comes without any warranty, to
 the extent permitted by applicable law. You can redistribute it
@@ -138,20 +140,6 @@ sub printUniq($$$) {
         }
     }
     if (not $options{"u"}) {
-        if (defined $prev and not isNotEqual($prev, $line)) {
-            $count++;
-            $isDupe = 1;
-        } elsif (defined $prev and isNotEqual($prev, $line)) {
-            if ($isDupe) {
-                print $fh "\t$count " if ($options{"c"});
-                print $fh "$prev";
-                $isDupe = 0;
-                $count = 1;
-            } elsif (not $options{"d"}) {
-                print $fh "\t$count " if ($options{"c"});
-                print $fh "$prev";
-            }
-        }
     }
 }
 
@@ -167,18 +155,6 @@ sub printUniqLast($$) {
             print $fh "$line";
         }
     } else {
-        if ($options{"d"}) {
-            if (not defined $prev) {
-                # do nothing; no previous = no dupe
-            } elsif (not isNotEqual($prev, $line)) {
-                print $fh "\t$count " if ($options{"c"});
-                print $fh "$prev";
-            }
-        } else {
-            print $fh "\t$count " if ($options{"c"});
-            print $fh "$line";
-        }
-    }
 
     if (defined $output) {
         close($fh);
