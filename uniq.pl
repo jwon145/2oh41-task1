@@ -16,10 +16,6 @@ sub isNotEqual($$);     # for -[ifw] since they change what gets compared
             "f", -1,
             "w", -1);
 
-$count = 1;     # for -c
-$isDupe = 0;
-$first = undef;
-
 sub main {
     getOpts();
 
@@ -28,6 +24,10 @@ sub main {
     my $beforeprev;
     my $prev;
     my $line;
+    $count = 1;     # for -c
+    $isDupe = 0;
+    $first = undef;
+
     while (<>) {
         $beforeprev = $prev;
         $prev = $line;
@@ -140,6 +140,27 @@ sub printUniq($$$) {
         }
     }
     if (not $options{"u"}) {
+        # if line eq first, increase count, isDupe
+        # elsif line ne first 
+            # if isDupee, print count+firs, count=1, !isDupe, first=line
+            # elsif not -d,  print count+first, count=1, first=line
+        if (not isNotEqual($line, $first)) {
+            $count++;
+            $isDupe = 1;
+        } else {
+            if ($isDupe) {
+                print $fh "\t$count " if ($options{"c"});
+                print $fh "$first";
+                $count = 1;
+                $isDupe = 0;
+                $first = $line;
+            } elsif (not $options{"d"}) {
+                print $fh "\t$count " if ($options{"c"});
+                print $fh "$first";
+                $count = 1;
+                $first = $line;
+            }
+        }
     }
 }
 
@@ -155,6 +176,19 @@ sub printUniqLast($$) {
             print $fh "$line";
         }
     } else {
+        # if line eq first, inc count, print count+first
+        # if undef first or line ne first AND !-d, print count+line
+        if (not isNotEqual($line, $first)) {
+            $count++;
+            print $fh "\t$count " if ($options{"c"});
+            print $fh "$first";
+        } elsif (not $options{"d"}) {
+            if (not defined $first or isNotEqual($line, $first)) {
+                print $fh "\t1 " if ($options{"c"});
+                print $fh "$line";
+            }
+        }
+    }
 
     if (defined $output) {
         close($fh);
