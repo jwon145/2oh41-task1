@@ -81,7 +81,7 @@ sub getOpts {
 
 sub printVersion { 
 print <<ENDVERSION;
-$0 (GNU coreutils) v1.0.1
+$0 (GNU coreutils) v1.0.2
 License WTFPLv2: 
 This is free software: it comes without any warranty, to
 the extent permitted by applicable law. You can redistribute it
@@ -140,26 +140,15 @@ sub printUniq($$$) {
         }
     }
     if (not $options{"u"}) {
-        # if line eq first, increase count, isDupe
-        # elsif line ne first 
-            # if isDupee, print count+firs, count=1, !isDupe, first=line
-            # elsif not -d,  print count+first, count=1, first=line
         if (not isNotEqual($line, $first)) {
             $count++;
             $isDupe = 1;
-        } else {
-            if ($isDupe) {
-                print $fh "\t$count " if ($options{"c"});
-                print $fh "$first";
-                $count = 1;
-                $isDupe = 0;
-                $first = $line;
-            } elsif (not $options{"d"}) {
-                print $fh "\t$count " if ($options{"c"});
-                print $fh "$first";
-                $count = 1;
-                $first = $line;
-            }
+        } elsif ($isDupe or not $options{"d"}) {
+            print $fh "\t$count " if ($options{"c"});
+            print $fh "$first";
+            $count = 1;
+            $isDupe = 0;
+            $first = $line;
         }
     }
 }
@@ -176,8 +165,6 @@ sub printUniqLast($$) {
             print $fh "$line";
         }
     } else {
-        # if line eq first, inc count, print count+first
-        # if undef first or line ne first AND !-d, print count+line
         if (not isNotEqual($line, $first)) {
             $count++;
             print $fh "\t$count " if ($options{"c"});
