@@ -80,7 +80,7 @@ sub getOpts {
 
 sub printVersion { 
 print <<ENDVERSION;
-$0 (GNU coreutils) v1.0.0
+$0 (new coreutils) v1.0.0
 License WTFPLv2: 
 This is free software: it comes without any warranty, to
 the extent permitted by applicable law. You can redistribute it
