@@ -8,10 +8,10 @@ sub getOpts;
 sub printHelp;
 sub printVersion;
 
-%options = ("n", -1,
-            "I", -1);
+%options = ("n", undef,
+            "I", undef);
 
-# $max_args = `getconf ARG_MAX`;    # are we allowed backticks? this would be more portable 
+# $max_args = `getconf ARG_MAX`;        # are we allowed backticks? this would be more portable 
 $max_args = 2097152 - 1;                # what it outputs on cse machines
 
 $command = "echo";
@@ -25,13 +25,25 @@ sub main {
         $line = $_;
         foreach $a (split(' ', $line)) {
             chomp $a;
-            push(@stdin_args, $a)
+            push(@stdin_args, $a);
         }
     }
 
     while (scalar(@stdin_args)) {
         my $number_of_args = ($max_args < scalar(@stdin_args)) ? $max_args : scalar(@stdin_args);
-        my $args = join(' ', splice(@stdin_args, 0, $number_of_args));
+        my $args;
+        if (defined $options{"I"}) {
+            @init_args = split(' ', $command);
+            $command = shift(@init_args);
+            foreach my $init_a (@init_args) {
+                my $temp = join(' ', @stdin_args);
+                $init_a =~ s/$options{"I"}/$temp/g;
+            }
+            $args = join(' ', @init_args);
+            @stdin_args = ();
+        } else {
+            $args = join(' ', splice(@stdin_args, 0, $number_of_args));
+        }
         print `$command $args`;
     }
 }
@@ -59,12 +71,13 @@ sub getOpts {
                     if ($options{$a} =~ /^[^0-9]+$/) {
                         die "$0: invalid number for -$a option\n";
                     }
+                    $max_args = $options{$a};
                     last;
                 } elsif ($a =~ /I/) {
                     $options{$a} = $arg;
                     $options{$a} =~ s/^.*I//;
                     $options{$a} = shift(@ARGV) if ($options{$a} =~ /^$/);
-                    if ($options{$a} =~ /^[^0-9]+$/) {
+                    if (not defined $options{$a} or $options{$a} =~ /^[^0-9]+$/) {
                         die "$0: invalid number for -$a option\n";
                     }
                     last;
