@@ -4,10 +4,12 @@ sub main;
 sub getOpts;
 sub printHelp;
 sub printVersion;
+sub removeDirPrefix(\@$);
 sub isEqual($$);
 sub LCSLength(\@\@);
 sub backTrack(\@\@\@$$);
-sub printDiff(\@\@\@$$);
+sub getDiff(\@\@\@$$);
+sub printDiff;
 
 %options = ("1", 0,
             "q", 0,
@@ -21,24 +23,39 @@ sub printDiff(\@\@\@$$);
             "I", undef,
             "c", undef,
             "u", undef,
-            "F", undef);
+            "F", undef,
+            "bothDir", 0); # when both files are directories, output is different
 
+@diff_output = ();
 
 sub main {
     getOpts();
 
-    open(FILE1, "< $ARGV[0]") or die "$0: Can't open $file: $!\n";
-    open(FILE2, "< $ARGV[1]") or die "$0: Can't open $file: $!\n";
-    my @file1 = <FILE1>;
-    my @file2 = <FILE2>;
-    close(FILE1);
-    close(FILE2);
+    my (@file1, @file2);
+
+    if (-f $ARGV[0]) {
+        open(my $fh1, "< $ARGV[0]") or die "$0: Can't open $file: $!\n";
+        @file1 = <$fh1>;
+        close($fh1);
+    } elsif (-d $ARGV[0]) {
+        @file1 = glob("$ARGV[0]/*");
+        removeDirPrefix(@file1, $ARGV[0]);
+    }
+    if (-f $ARGV[1]) {
+        open(my $fh2, "< $ARGV[1]") or die "$0: Can't open $file: $!\n";
+        @file2 = <$fh2>;
+        close($fh2);
+    } elsif (-d $ARGV[1]) {
+        @file2 = glob("$ARGV[1]/*");
+        removeDirPrefix(@file2, $ARGV[1]);
+    }
 
     my @c = LCSLength(@file1, @file2);
 
     my $i = scalar(@file1);
     my $j = scalar(@file2);
-    printDiff(@c, @file1, @file2, $i, $j);
+    getDiff(@c, @file1, @file2, $i, $j);
+    printDiff();
 }
 
 sub getOpts {
@@ -86,6 +103,15 @@ sub getOpts {
         } else {
             push(@ARGV, $arg);
         }
+    }
+    if (-d $ARGV[0] and -d $ARGV[1]) {
+        $options{"bothDir"} = 1;
+    }
+    if (not -d $ARGV[0] and not -f $ARGV[0]) {
+        die "$0: $ARGV[0] not a file or directory\n";
+    }
+    if (not -d $ARGV[1] and not -f $ARGV[1]) {
+        die "$0: $ARGV[1] not a file or directory\n";
     }
 }
 
@@ -136,6 +162,14 @@ ENDHELP
     exit(0);
 }
 
+sub removeDirPrefix(\@$) {
+    my ($list, $dir) = @_;
+    foreach my $x (@$list) {
+        $x =~ s/^$dir//;
+        $x =~ s/^\/// if ($x =~ /^\//);
+    }
+}
+
 sub isEqual($$) {
     my ($lineA, $lineB) = @_;
     my ($line1, $line2) = ($lineA, $lineB);
@@ -175,24 +209,36 @@ sub LCSLength(\@\@) {       # based on pseudocode on wikipedia page for longest 
     return @c;
 }
 
-sub printDiff(\@\@\@$$) {       # based on pseudocode on wikipedia page for longest common subsequence problem
+sub getDiff(\@\@\@$$) {       # based on pseudocode on wikipedia page for longest common subsequence problem
     my ($ref1, $ref2, $ref3, $i, $j) = @_;
     my @c = @$ref1;
     my @file1 = @$ref2;
     my @file2 = @$ref3;
 
     if ($i > 0 and $j > 0 and isEqual($file1[$i-1], $file2[$j-1])) {
-        printDiff(@c, @file1, @file2, $i-1, $j-1);
-        print "  $file1[$i-1]";
+        getDiff(@c, @file1, @file2, $i-1, $j-1);
+        push(@diff_output, "  $file1[$i-1]");
     } else {
         if ($j > 0 and ($i == 0 or $c[$i][$j-1] >= $c[$i-1][$j])) {
-            printDiff(@c, @file1, @file2, $i, $j-1);
-            print "> $file2[$j-1]";
+            getDiff(@c, @file1, @file2, $i, $j-1);
+            push(@diff_output, "> $file2[$j-1]");
         } elsif ($i > 0 and ($j == 0 or $c[$i][$j-1] < $c[$i-1][$j])) {
-            printDiff(@c, @file1, @file2, $i-1, $j);
-            print "< $file1[$i-1]";
-        } else {
-            print "";
+            getDiff(@c, @file1, @file2, $i-1, $j);
+            push(@diff_output, "< $file1[$i-1]");
+        }
+    }
+}
+
+sub printDiff {
+    if (not $options{"bothDir"}) {
+        foreach my $diff_line (@diff_output) {
+            print "$diff_line";
+        }
+    } else {
+        foreach my $diff_line (@diff_output) {
+            $diff_line =~ s/^</Only in $ARGV[0]:/;
+            $diff_line =~ s/^>/Only in $ARGV[1]:/;
+            print "$diff_line\n" unless ($diff_line =~ /^ /);
         }
     }
 }
