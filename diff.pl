@@ -179,6 +179,11 @@ sub isEqual($$) {
         $line2 =~ tr/A-Z/a-z/; 
     }
 
+    if ($options{"w"}) {
+        $line1 =~ s/\s//g; 
+        $line2 =~ s/\s//g; 
+    }
+
     if ($line1 eq $line2) {
         return 1;
     } else {
@@ -232,7 +237,7 @@ sub getDiff(\@\@\@$$) {       # based on pseudocode on wikipedia page for longes
 sub printDiff {
     if (not $options{"bothDir"}) {
         foreach my $diff_line (@diff_output) {
-            print "$diff_line";
+            print "$diff_line" unless ($diff_line =~ /^ /);
         }
     } else {
         foreach my $diff_line (@diff_output) {
