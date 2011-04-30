@@ -4,6 +4,7 @@ sub main;
 sub getOpts;
 sub printHelp;
 sub printVersion;
+sub isEqual($$);
 sub LCSLength(\@\@);
 sub backTrack(\@\@\@$$);
 sub printDiff(\@\@\@$$);
@@ -34,15 +35,9 @@ sub main {
     close(FILE2);
 
     my @c = LCSLength(@file1, @file2);
-    for my $i (0..scalar(@file1)) {
-        for my $j (0..scalar(@file2)) {
-            print $c[$i][$j];
-        }
-        print "\n";
-    }
+
     my $i = scalar(@file1);
     my $j = scalar(@file2);
-
     printDiff(@c, @file1, @file2, $i, $j);
 }
 
@@ -57,9 +52,6 @@ sub getOpts {
 
         if ($arg eq "--suppress-common-lines") {
             $options{"scl"} = 1;
-        } elsif ($arg =~ /^[^-]/) {
-            unshift(@ARGV, $arg);
-            last;
         } elsif ($arg =~ /^-/) {
             $arg =~ s/-//;
             my @clusteredArgs = split(//, $arg);
@@ -144,6 +136,22 @@ ENDHELP
     exit(0);
 }
 
+sub isEqual($$) {
+    my ($lineA, $lineB) = @_;
+    my ($line1, $line2) = ($lineA, $lineB);
+
+    if ($options{"i"}) {
+        $line1 =~ tr/A-Z/a-z/; 
+        $line2 =~ tr/A-Z/a-z/; 
+    }
+
+    if ($line1 eq $line2) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 sub LCSLength(\@\@) {       # based on pseudocode on wikipedia page for longest common subsequence problem
     my ($ref1, $ref2) = @_;
     my @file1 = @$ref1;
@@ -155,10 +163,9 @@ sub LCSLength(\@\@) {       # based on pseudocode on wikipedia page for longest 
     for my $j (0..scalar(@file2)) {
         $c[0][$j] = 0;
     }
-    # 0     1               $#file      scalar$file
     for my $i (1..scalar(@file1)) {
         for my $j (1..scalar(@file2)) {
-            if ($file1[$i-1] eq $file2[$j-1]) {
+            if (isEqual($file1[$i-1], $file2[$j-1])) {
                 $c[$i][$j] = $c[$i-1][$j-1] + 1;
             } else {
                 $c[$i][$j] = $c[$i][$j-1] > $c[$i-1][$j] ? $c[$i][$j-1] : $c[$i-1][$j];
@@ -168,22 +175,22 @@ sub LCSLength(\@\@) {       # based on pseudocode on wikipedia page for longest 
     return @c;
 }
 
-sub printDiff(\@\@\@$$) {
+sub printDiff(\@\@\@$$) {       # based on pseudocode on wikipedia page for longest common subsequence problem
     my ($ref1, $ref2, $ref3, $i, $j) = @_;
     my @c = @$ref1;
     my @file1 = @$ref2;
     my @file2 = @$ref3;
 
-    if ($i > 0 and $j > 0 and $file1[$i-1] eq $file2[$j-1]) {
+    if ($i > 0 and $j > 0 and isEqual($file1[$i-1], $file2[$j-1])) {
         printDiff(@c, @file1, @file2, $i-1, $j-1);
         print "  $file1[$i-1]";
     } else {
         if ($j > 0 and ($i == 0 or $c[$i][$j-1] >= $c[$i-1][$j])) {
             printDiff(@c, @file1, @file2, $i, $j-1);
-            print "+ $file2[$j-1]";
+            print "> $file2[$j-1]";
         } elsif ($i > 0 and ($j == 0 or $c[$i][$j-1] < $c[$i-1][$j])) {
             printDiff(@c, @file1, @file2, $i-1, $j);
-            print "- $file1[$i-1]";
+            print "< $file1[$i-1]";
         } else {
             print "";
         }
