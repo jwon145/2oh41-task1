@@ -236,14 +236,77 @@ sub getDiff(\@\@\@$$) {       # based on pseudocode on wikipedia page for longes
 
 sub printDiff {
     if (not $options{"bothDir"}) {
+        my ($f1_start, $f1_end, $f2_start, $f2_end, $edit) = (0, 0, 0, 0,"0");
+        my @buffer = ();
         foreach my $diff_line (@diff_output) {
-            if ($options{"B"}) {
-                if ($diff_line =~ /^[<>] .+$/) {
-                    print "$diff_line" unless ($diff_line =~ /^ /);
+            # if not a common line, push to a buffer, record edit, record lines numb? if common line etc
+            # if < then f2s starts at 1?
+            if ($diff_line =~ /^[<]/) {
+                push(@buffer, $diff_line);
+                $edit = "d" if ($edit eq "0");
+                $edit = "c" if ($edit eq "a");
+                $f1_start++ if ($f1_start == 0);
+                $f1_end++;
+            } elsif ($diff_line =~ /^[>]/) {
+                push(@buffer, $diff_line);
+                $edit = "a" if ($edit eq "0");
+                $edit = "c" if ($edit eq "d");
+                $f2_start++ if ($f2_start == 0);
+                $f2_end++;
+            } elsif ($diff_line =~ /^ /) {
+                print "$f1_start" if ($f1_start <= $f1_end);
+                print "," if ($f1_start < $f1_end);
+                print "$f1_end" if ($f1_end != $f1_start);
+                print "$edit";
+                print "$f2_start" if ($f2_start <= $f2_end);
+                print "," if ($f2_start < $f2_end);
+                print "$f2_end" if ($f2_end != $f2_start);
+                print "\n";
+                my $other = undef;
+                foreach my $line (@buffer) {
+                    next if ($options{"B"} and $line =~ /^[^<> $]/);
+                    if (not defined $other) {
+                        $other = $line;
+                        $other =~ s/^(.).+/$1/;
+                        chomp $other;
+                    } else {
+                        print "---\n" if ($edit eq "c" and not $line =~ /^$other/);
+                        $other = $line;
+                        $other =~ s/^(.).+/$1/;
+                        chomp $other;
+                    }
+                    print "$line";
                 }
-            } else {
-                print "$diff_line" unless ($diff_line =~ /^ /);
+                $other = undef;
+                @buffer = ();
+                $f1_end++;
+                $f1_start = $f1_end + 1;
+                $f2_end++;
+                $f2_start = $f2_end + 1;
+                $edit = "0";
             }
+        }
+        print "$f1_start" if ($f1_start <= $f1_end);
+        print "," if ($f1_start < $f1_end);
+        print "$f1_end" if ($f1_end != $f1_start);
+        print "$edit";
+        print "$f2_start" if ($f2_start <= $f2_end);
+        print "," if ($f2_start < $f2_end);
+        print "$f2_end" if ($f2_end != $f2_start);
+        print "\n";
+        my $other = undef;
+        foreach my $line (@buffer) {
+            if (not defined $other) {
+                $other = $line;
+                $other =~ s/^(.).+/$1/;
+                chomp $other;
+            } else {
+                print "---\n" if ($edit eq "c" and not $line =~ /^$other/);
+                $other = $line;
+                $other =~ s/^(.).+/$1/;
+                chomp $other;
+            }
+            print "$line";
         }
     } else {
         foreach my $diff_line (@diff_output) {
