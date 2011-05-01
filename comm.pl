@@ -18,11 +18,11 @@ sub main {
     my $line2 = <FILE2>;
     
     while (defined $line1 or defined $line2) {
-        if (not defined $line1) {
+        if (not defined $line1) {   # if file1 has no more lines
             print "\t" unless ($options{"1"} or $options{"2"});
             print "$line2" unless ($options{"2"});
             $line2 = <FILE2>;
-        } elsif (not defined $line2) {
+        } elsif (not defined $line2) {   # if file2 has no more lines
             print "$line1" unless ($options{"1"});
             $line1 = <FILE1>;
         } else {
