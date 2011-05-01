@@ -32,7 +32,6 @@ sub main {
         $beforeprev = $prev;
         $prev = $line;
         $line = $_;
-        $first = $line if (not defined $first);
         printUniq($beforeprev, $prev, $line);
     }
     printUniqLast($prev, $line);
@@ -81,7 +80,7 @@ sub getOpts {
 
 sub printVersion { 
 print <<ENDVERSION;
-$0 (new coreutils) v1.0.2
+$0 (new coreutils) v1.0.3
 License WTFPLv2: 
 This is free software: it comes without any warranty, to
 the extent permitted by applicable law. You can redistribute it
@@ -140,7 +139,9 @@ sub printUniq($$$) {
         }
     }
     if (not $options{"u"}) {
-        if (not isNotEqual($line, $first)) {
+        if (not defined $first) {
+            $first = $line;
+        } elsif (not isNotEqual($line, $first)) {
             $count++;
             $isDupe = 1;
         } elsif ($isDupe or not $options{"d"}) {
@@ -149,6 +150,9 @@ sub printUniq($$$) {
             $count = 1;
             $isDupe = 0;
             $first = $line;
+        } elsif (isNotEqual($line, $first)) {
+            $first = $line;
+            $count = 1;
         }
     }
 }
@@ -165,12 +169,12 @@ sub printUniqLast($$) {
             print $fh "$line";
         }
     } else {
-        if (not isNotEqual($line, $first)) {
+        if (not isNotEqual($line, $prev)) {
             $count++;
             print $fh "\t$count " if ($options{"c"});
             print $fh "$first";
         } elsif (not $options{"d"}) {
-            if (not defined $first or isNotEqual($line, $first)) {
+            if (not defined $first or isNotEqual($line, $prev)) {
                 print $fh "\t1 " if ($options{"c"});
                 print $fh "$line";
             }
