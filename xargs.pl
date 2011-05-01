@@ -30,10 +30,10 @@ sub main {
     }
 
     while (scalar(@stdin_args)) {
-        my $number_of_args = ($max_args < scalar(@stdin_args)) ? $max_args : scalar(@stdin_args);
-        my $args;
+        my $number_of_args = ($max_args < scalar(@stdin_args)) ? $max_args : scalar(@stdin_args); # number of args = max ($max_args, $#stdin_args + 1)
+        my $args;                                       # stores the arguments for the command
         if (defined $options{"I"}) {
-            @init_args = split(' ', $command);
+            @init_args = split(' ', $command);          #initial arguments specified by -I
             $command = shift(@init_args);
             foreach my $init_a (@init_args) {
                 my $temp = join(' ', @stdin_args);
