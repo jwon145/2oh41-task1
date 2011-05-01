@@ -170,7 +170,6 @@ sub printUniqLast($$) {
         }
     } else {
         if (not isNotEqual($line, $prev)) {
-            $count++;
             print $fh "\t$count " if ($options{"c"});
             print $fh "$first";
         } elsif (not $options{"d"}) {
