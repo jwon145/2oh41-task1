@@ -19,7 +19,7 @@ sub printWC;
 sub main {
     getOpts();
 
-    if (scalar(@ARGV)) {
+    if (scalar(@ARGV)) {        # going through files
         foreach my $file (@ARGV) {
             open(FILE, "<$file") or die "$0: Can't open $file: $!\n";
             ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
@@ -29,7 +29,7 @@ sub main {
             storeCounts($file);
             close(FILE);
         }
-    } else {
+    } else {                    #going through stdin
         ($charCount, $wordCount, $lineCount, $longestLine) = (0, 0, 0, 0);
         while (<STDIN>) {
             lineProcessing($_);
@@ -104,7 +104,7 @@ ENDHELP
     exit(0);
 }
 
-sub lineProcessing($) {
+sub lineProcessing($) {     # for each line, gather the counts
     my ($line) = @_;
     my $tempCharCount = 0;
 
